@@ -1,0 +1,1005 @@
+syntax = "proto3";
+package search_v3;
+option go_package = "../search-v3";
+
+message SearchResults {
+  repeated Chunk chunks = 1;
+}
+
+message Chunk {
+  string chunk_id = 1;
+  int64 last_update_timestamp = 2;
+  optional DebugInfo debug_info = 3;
+  repeated Ticket tickets = 4;
+  optional SoftResponse soft_tickets = 5;
+  Ticket brand_ticket = 6;
+  map<int64, Ticket> brand_tickets = 7;
+  optional Ticket cheapest_ticket = 8;
+  optional Ticket filtered_cheapest_ticket = 9;
+  optional Ticket cheapest_ticket_without_airport_precheck = 10;
+  repeated DirectFlights direct_flights = 11;
+  repeated FlightLeg flight_legs = 12;
+  map<string, AirlineInfo> airlines = 13;
+  Places places = 14;
+  map<int64, AgentInfo> agents = 15;
+  map<int64, Alliance> alliances = 16;
+  map<string, Equipment> equipments = 17;
+  SearchParams search_params = 18;
+  optional DegradedBoundaries degraded_filter_boundaries = 19;
+  optional Boundaries filter_boundaries = 20;
+  ResultsMeta meta = 21;
+  optional FilterState filter_state = 22;
+  Order order = 23;
+  Brand brand = 24;
+}
+
+message DebugInfo {
+  string server_name = 1;
+  string data_center = 2;
+  map<string, GateDebugInfo> gates = 3;
+  bool from_cache = 4;
+  int64 search_start_time = 5;
+}
+
+message GateDebugInfo {
+  string name = 1;
+  map<int64, AgentDebugInfo> agents = 2;
+  double response_duration_seconds = 3;
+  repeated string errors = 4;
+  bool from_cache = 5;
+  string cache_search_uuid = 6;
+  int64 cache_search_created_at = 7;
+}
+
+message AgentDebugInfo {
+  map<string, ProposalDebugInfo> proposals = 1;
+  int64 proposals_count = 2;
+  map<string, int64> bad_proposals = 3;
+  map<string, Proposals> filtered_proposals = 4;
+  map<string, int64> merged_flight_terms_sources = 5;
+}
+
+message Proposals {
+  repeated Proposal proposals = 1;
+}
+
+message Proposal {
+  string id = 1;
+  Amount price = 2;
+  Amount price_per_person = 3;
+  int64 agent_id = 4;
+  map<int64, FlightTerm> flight_terms = 5;
+  repeated TransferTerms transfer_terms = 6;
+  Amount unified_price = 7;
+  optional ProposalOptions options = 8;
+  double weight = 9;
+  bool from_main_airline = 10;
+  repeated string tags = 11;
+  Fare minimum_fare = 12;
+  bool is_warmcache = 13;
+  optional Cashback cashback = 14;
+  optional Cashback cashback_per_person = 15;
+  repeated AcceptedCard accepted_cards = 16;
+}
+
+message AcceptedCard {
+  string region = 1;
+  string system = 2;
+}
+
+message Cashback {
+  optional Amount localized_amount = 1;
+  bool available = 2;
+}
+
+message Fare {
+  string code = 1;
+  optional Baggage baggage = 2;
+  optional Baggage handbags = 3;
+  optional TariffInfo return_before_flight = 4;
+  optional TariffInfo return_after_flight = 5;
+  optional TariffInfo change_before_flight = 6;
+  optional TariffInfo change_after_flight = 7;
+  optional TariffInfo seat_at_purchase = 8;
+  optional TariffInfo seat_at_registration = 9;
+  string fare_name = 10;
+  double miles = 11;
+}
+
+message Baggage {
+  int64 count = 1;
+  double weight = 2;
+  double total_weight = 3;
+  double length = 4;
+  double width = 5;
+  double height = 6;
+  double sum_dimension = 7;
+}
+
+message TariffInfo {
+  bool available = 1;
+  optional Amount penalty = 2;
+  bool is_from_config = 3;
+}
+
+message ProposalOptions {
+  Hotel hotel = 1;
+}
+
+message Hotel {
+  string name = 1;
+  uint32 stars = 2;
+  string room_type = 3;
+  string meals = 4;
+}
+
+message TransferTerms {
+  repeated TransferTerm terms = 1;
+}
+
+message TransferTerm {
+  bool is_virtual_interline = 1;
+  repeated string tags = 2;
+}
+
+message FlightTerm {
+  string fare_code = 1;
+  TripClass trip_class = 2;
+  int32 seats_available = 3;
+  optional FlightDesignator marketing_carrier_designator = 4;
+  optional Baggage baggage = 5;
+  optional Baggage handbags = 6;
+  optional AdditionalTariffInfo additional_tariff_info = 7;
+  bool is_charter = 8;
+  repeated string tags = 9;
+  MergedTermsInfo merged_terms_info = 10;
+  map<string, int64> merged_from_other_proposals = 11;
+}
+
+message MergedTermsInfo {
+  TariffMergeInfo seat_at_registration = 1;
+  TariffMergeInfo seat_at_purchase = 2;
+  TariffMergeInfo return_before_flight = 3;
+  TariffMergeInfo return_after_flight = 4;
+  TariffMergeInfo change_before_flight = 5;
+  TariffMergeInfo change_after_flight = 6;
+  BaggageMergeInfo baggage = 7;
+  BaggageMergeInfo handbags = 8;
+}
+
+message TariffMergeInfo {
+  TariffMergeParams is_from_config = 1;
+  TariffMergeParams mismatch = 2;
+}
+
+message TariffMergeParams {
+  bool available = 1;
+  bool penalty_currency_code = 2;
+  bool penalty_value = 3;
+}
+
+message BaggageMergeInfo {
+  BaggageMergeParams is_from_config = 1;
+  BaggageMergeParams mismatch = 2;
+}
+
+message BaggageMergeParams {
+  bool count = 1;
+  bool weight = 2;
+  bool total_weight = 3;
+  bool height = 4;
+  bool length = 5;
+  bool width = 6;
+  bool sum_dimension = 7;
+}
+
+message AdditionalTariffInfo {
+  optional TariffInfo seat_at_purchase_info = 1;
+  optional TariffInfo seat_at_registration_info = 2;
+  optional TariffInfo return_before_flight = 3;
+  optional TariffInfo return_after_flight = 4;
+  optional TariffInfo change_before_flight = 5;
+  optional TariffInfo change_after_flight = 6;
+  string fare_name = 7;
+  double miles = 8;
+}
+
+message FlightDesignator {
+  string carrier = 1;
+  string airline_id = 2;
+  string number = 3;
+}
+
+message Amount {
+  Currency currency_code = 1;
+  double value = 2;
+}
+
+message ProposalDebugInfo {
+  Amount agency_price = 1;
+  double multiplier = 2;
+  double productivity = 3;
+  map<int64, FlightTermDebugInfo> flight_terms = 4;
+  optional CashbackDebugInfo cashback = 5;
+}
+
+message FlightTermDebugInfo {
+  TermSource baggage_source = 1;
+  TermSource handbags_source = 2;
+  repeated TechnicalStop gate_technical_stops = 3;
+}
+
+message TechnicalStop {
+  string airport_code = 1;
+}
+
+message CashbackDebugInfo {
+  optional Amount amount = 1;
+  optional Amount localized_amount = 2;
+  bool available = 3;
+}
+
+enum TermSource {
+  GATE = 0;
+  ROUTE_TARGETING = 1;
+  FACE_CODE_TARGETING = 2;
+  AIRLINE_DEFAULT = 3;
+  DEFAULT = 4;
+}
+
+message Ticket {
+  repeated Segment segments = 1;
+  repeated Proposal proposals = 2;
+  string signature = 3;
+  double popularity = 4;
+  double score = 5;
+  string hashsum = 6;
+  repeated string tags = 7;
+  repeated BadgeInfo badges = 8;
+  map<string, FareProposals> extra_fares = 9;
+  repeated string filtered_by = 10;
+}
+
+message FareProposals {
+  repeated FareProposal proposals = 1;
+}
+
+message FareProposal {
+  string proposal_id = 1;
+  int64 index = 2;
+}
+
+message BadgeInfo {
+  string type = 1;
+  repeated double scores = 2;
+  BadgeInfoMeta meta = 3;
+}
+
+message BadgeInfoMeta {
+  map<string, string> name = 1;
+  int64 priority = 2;
+  int64 position = 3;
+  int64 limit = 4;
+  Colors colors = 5;
+}
+
+message Colors {
+  string light = 1;
+  string dark = 2;
+}
+
+message Segment {
+  repeated int64 flights = 1;
+  repeated Transfer transfers = 2;
+  repeated string tags = 3;
+}
+
+message Transfer {
+  VisaRules visa_rules = 1;
+  bool recheck_baggage = 2;
+  bool night_transfer = 3;
+  repeated string tags = 4;
+}
+
+message VisaRules {
+  bool required = 1;
+}
+
+message SoftResponse {
+  repeated string filters_applied = 1;
+  repeated Ticket tickets = 2;
+}
+
+message DirectFlights {
+  string carrier = 1;
+  repeated string carriers = 2;
+  Ticket cheapest_ticket = 3;
+  repeated ScheduleList schedule = 4;
+}
+
+message ScheduleList {
+  repeated Schedule list = 1;
+}
+
+message Schedule {
+  string time = 1;
+  string datetime = 2;
+  repeated string tickets_signatures = 3;
+}
+
+message FlightLeg {
+  string origin = 1;
+  string destination = 2;
+  string local_departure_date_time = 3;
+  string local_arrival_date_time = 4;
+  int64 departure_unix_timestamp = 5;
+  int64 arrival_unix_timestamp = 6;
+  FlightDesignator operating_carrier_designator = 7;
+  Equipment equipment = 8;
+  repeated TechnicalStop technical_stops = 9;
+  string signature = 10;
+  repeated string tags = 11;
+}
+
+message AirlineInfo {
+  string iata = 1;
+  bool is_lowcost = 2;
+  map<string, MapStringString> name = 3;
+  int64 alliance_id = 4;
+  string site_name = 5;
+  string brand_color = 6;
+}
+
+message MapStringString {
+  map<string, string> map = 1;
+}
+
+message Places {
+  map<string, AirportInfo> airports = 1;
+  map<string, CityInfo> cities = 2;
+  map<string, CountryInfo> countries = 3;
+  map<string, MetroAreaInfo> metro_areas = 4;
+  map<string, string> airports_to_metro = 5;
+}
+
+message AirportInfo {
+  map<string, MapStringString> name = 1;
+  string code = 2;
+  string city_code = 3;
+  string metro_area_code = 4;
+  GeoPoint coordinates = 5;
+  OptBool has_transit_zone = 6;
+  int64 transit_work_hours_min = 7;
+  int64 transit_work_hours_max = 8;
+}
+
+message GeoPoint {
+  double lat = 1;
+  double lng = 2;
+}
+
+message OptBool {
+  bool value = 1;
+  bool is_unknown = 2;
+}
+
+message CityInfo {
+  string code = 1;
+  map<string, MapStringString> name = 2;
+  string country = 3;
+  string timezone = 4;
+  repeated string airports = 5;
+}
+
+message CountryInfo {
+  string code = 1;
+  map<string, MapStringString> name = 2;
+  string unified_visa = 3;
+}
+
+message MetroAreaInfo {
+  string code = 1;
+  repeated string airports = 2;
+  string timezone = 3;
+}
+
+message AgentInfo {
+  int64 id = 1;
+  string gate_name = 2;
+  map<string, MapStringString> label = 3;
+  repeated string payment_methods = 4;
+  bool mobile_version = 5;
+  bool hide_proposals = 6;
+  bool assisted = 7;
+  string mobile_type = 8;
+  repeated string airline_iatas = 9;
+}
+
+message Alliance {
+  int64 id = 1;
+  string name = 2;
+}
+
+message Equipment {
+  string code = 1;
+  EquipmentType type = 2;
+  string name = 3;
+}
+
+enum EquipmentType {
+  UNKNOWN = 0;
+  PLANE = 1;
+  TRAIN = 2;
+  BUS = 3;
+  BOAT = 4;
+}
+
+message SearchParams {
+  Passengers passengers = 1;
+  TripClass trip_class = 2;
+  SourceKind source_kind = 3;
+  map<string, string> experiments = 4;
+  repeated string payment_options = 5;
+}
+
+enum SourceKind {
+  OTHER = 0;
+  WEB = 1;
+  MOBILE = 2;
+  MOBILE_WEB = 3;
+  WHITE_LABEL = 4;
+  TP_API = 5;
+  B2B_WEB = 6;
+}
+
+message Passengers {
+  uint32 adults = 1;
+  uint32 children = 2;
+  uint32 infants = 3;
+}
+
+message DegradedBoundaries {
+  map<int64, FilterPrice> agents = 1;
+  map<string, FilterPrice> airlines = 2;
+  map<int64, FilterPrice> alliances = 3;
+  optional FilterBool has_interlines = 4;
+  optional FilterBool has_lowcosts = 5;
+  map<int64, DegradedAirportsBoundaries> airports = 6;
+  map<string, FilterPrice> same_departure_arrival_airport = 7;
+  optional FilterBaggageBoundaries baggage = 8;
+  map<string, FilterPrice> equipments = 9;
+  map<string, FilterPrice> payment_methods = 10;
+  PriceBoundaries price = 11;
+  map<int64, DegradedTimeBoundaries> departure_arrival_time = 12;
+  optional DegradedReturnTicketBoundaries return_ticket = 13;
+  optional DegradedReturnTicketBoundaries change_ticket = 14;
+  map<int64, FilterPrice> transfers_count = 15;
+  TransferDurationBoundaries transfers_duration = 16;
+  map<string, FilterPrice> transfers_airports = 17;
+  map<string, FilterPrice> transfers_countries = 18;
+  optional FilterBool has_transfers_with_airport_change = 19;
+  optional FilterBool has_transfers_with_baggage_recheck = 20;
+  optional FilterBool has_transfers_with_visa = 21;
+  optional FilterBool has_transfers_with_virtual_interline = 22;
+  optional FilterBool has_covid_restrictions = 23;
+  optional FilterBool has_night_transfers = 24;
+  optional FilterBool has_convenient_transfers = 25;
+  optional FilterBool has_short_layover_transfers = 26;
+  optional FilterBool has_long_layover_transfers = 27;
+
+}
+
+message FilterPrice {
+  double enable_min_price = 1;
+  double disable_min_price = 2;
+}
+
+message FilterBool {
+  double enable_min_price = 1;
+  double disable_min_price = 2;
+}
+
+message DegradedAirportsBoundaries {
+  map<string, FilterPrice> arrival = 1;
+  map<string, FilterPrice> departure = 2;
+}
+
+message FilterBaggageBoundaries {
+  optional FilterPrice full_baggage = 1;
+  optional FilterPrice no_baggage = 2;
+  optional FilterPrice large_handbag = 3;
+}
+
+message BaggageBoundaries {
+  double full_baggage = 1;
+  double no_baggage = 2;
+  double large_handbag = 3;
+}
+
+message PriceBoundaries {
+  double min = 1;
+  double max = 2;
+}
+
+message DegradedTimeBoundaries {
+  map<string, FilterPrice> arrival_date = 1;
+  optional DateTimeRangeBoundaries arrival_time = 2;
+  optional DateTimeRangeBoundaries departure_time = 3;
+  optional RangeBoundaries trip_duration = 4;
+}
+
+message DateTimeRangeBoundaries {
+  string min = 1;
+  string max = 2;
+  map<string, double> buckets = 3;
+  double bucket_width = 4;
+}
+
+message RangeBoundaries {
+  int64 min = 1;
+  int64 max = 2;
+  map<string, double> buckets = 3;
+  double bucket_width = 4;
+}
+
+message DegradedReturnTicketBoundaries {
+  optional FilterPrice available = 1;
+  optional FilterPrice free = 2;
+}
+
+message TransferDurationBoundaries {
+  int64 min = 1;
+  int64 max = 2;
+}
+
+message Boundaries {
+  map<int64, double> agents = 1;
+  map<string, double> airlines = 2;
+  map<int64, double> alliances = 3;
+  bool has_interlines = 4;
+  bool has_lowcosts = 5;
+  map<int64, AirportsBoundaries> airports = 6;
+  map<string, double> same_departure_arrival_airport = 7;
+  BaggageBoundaries baggage = 8;
+  map<string, double> equipments = 9;
+  map<string, double> payment_methods = 10;
+  PriceBoundaries price = 11;
+  map<int64, TimeBoundaries> departure_arrival_time = 12;
+  ReturnBoundaries return_ticket = 13;
+  ChangeBoundaries change_ticket = 14;
+  map<int64, double> transfers_count = 15;
+  optional TransferDurationBoundaries transfers_duration = 16;
+  map<string, double> transfers_airports = 17;
+  map<string, double> transfers_countries = 18;
+  bool has_transfers_with_airport_change = 19;
+  bool has_transfers_with_baggage_recheck = 20;
+  bool has_transfers_with_visa = 21;
+  bool has_transfers_with_virtual_interline = 22;
+  bool has_covid_restrictions = 23;
+  bool has_night_transfers = 24;
+  bool has_convenient_transfers = 25;
+  bool has_short_layover_transfers = 26;
+  bool has_long_layover_transfers = 27;
+}
+
+message ReturnBoundaries {
+  double available = 1;
+  double free = 2;
+}
+
+message ChangeBoundaries {
+  double available = 1;
+  double free = 2;
+}
+
+message AirportsBoundaries {
+  map<string, double> arrival = 1;
+  map<string, double> departure = 2;
+}
+
+message TimeBoundaries {
+  map<string, double> arrival_date = 1;
+  DateTimeRangeBoundaries arrival_time = 2;
+  DateTimeRangeBoundaries departure_time = 3;
+  RangeBoundaries trip_duration = 4;
+}
+
+message ResultsMeta {
+  int64 filtered_tickets_count = 1;
+  int64 total_tickets_count = 2;
+  int64 direct_tickets_count = 3;
+}
+
+message FilterState {
+  repeated int64 agents = 1;
+  repeated string airlines = 2;
+  repeated int64 alliances = 3;
+  bool without_interlines = 4;
+  bool without_lowcosts = 5;
+  map<int64, SegmentFilter> segments = 6;
+  repeated string with_same_departure_arrival_airport = 7;
+  repeated string equipments = 8;
+  repeated string payment_methods = 9;
+  repeated string pin_flight_signatures = 10;
+  repeated FloatRange price = 11;
+  repeated int64 transfers_count = 12;
+  repeated Range transfers_duration = 13;
+  bool transfers_without_airport_change = 14;
+  bool transfers_without_baggage_recheck = 15;
+  bool transfers_without_visa = 16;
+  bool transfers_without_virtual_interline = 17;
+  bool convenient_transfers = 18;
+  bool without_night_transfers = 19;
+  bool without_short_layover = 20;
+  bool without_long_layover = 21;
+  repeated string transfers_airports = 22;
+  repeated string transfers_countries = 23;
+  bool without_covid_restrictions = 24;
+  repeated string baggage = 25;
+  optional TimeBuckets time_buckets = 26;
+  repeated string return_before_flight = 27;
+  repeated string change_before_flight = 28;
+}
+
+message TimeBuckets {
+  int64 arrival_time_bucket_width = 1;
+  int64 departure_time_bucket_width = 2;
+  int64 trip_duration_time_bucket_width = 3;
+}
+
+message SegmentFilter {
+  repeated string airports_arrival = 1;
+  repeated string airports_departure = 2;
+  repeated DateTimeOrTimeRange arrival_time = 3;
+  repeated string arrival_date = 4;
+  repeated DateTimeRange departure_time = 5;
+  repeated Range trip_duration = 6;
+}
+
+message DateTimeOrTimeRange {
+  string min = 1;
+  string max = 2;
+}
+
+message DateTimeRange {
+  int64 min = 1;
+  int64 max = 2;
+}
+
+message Range {
+  int64 min = 1;
+  int64 max = 2;
+}
+
+message FloatRange {
+  double min = 1;
+  double max = 2;
+}
+
+enum Order {
+  BEST = 0;
+  CHEAPEST = 1;
+  DEPARTURE_TIME = 2;
+  ARRIVAL_TIME = 3;
+  TRANSFER_DURATION = 4;
+  TRIP_DURATION = 5;
+  RATING = 6;
+  POPULARITY = 7;
+  BEST_SCORING = 8;
+}
+
+enum Brand {
+  AS = 0;
+  WA = 1;
+}
+
+enum Currency {
+  ADP = 0;
+  AED = 1;
+  AFA = 2;
+  AFN = 3;
+  ALK = 4;
+  ALL = 5;
+  AMD = 6;
+  ANG = 7;
+  AOA = 8;
+  AOK = 9;
+  AON = 10;
+  AOR = 11;
+  ARA = 12;
+  ARL = 13;
+  ARM = 14;
+  ARP = 15;
+  ARS = 16;
+  ATS = 17;
+  AUD = 18;
+  AWG = 19;
+  AZM = 20;
+  AZN = 21;
+  BAD = 22;
+  BAM = 23;
+  BAN = 24;
+  BBD = 25;
+  BDT = 26;
+  BEC = 27;
+  BEF = 28;
+  BEL = 29;
+  BGL = 30;
+  BGM = 31;
+  BGN = 32;
+  BGO = 33;
+  BHD = 34;
+  BIF = 35;
+  BMD = 36;
+  BND = 37;
+  BOB = 38;
+  BOL = 39;
+  BOP = 40;
+  BOV = 41;
+  BRB = 42;
+  BRC = 43;
+  BRE = 44;
+  BRL = 45;
+  BRN = 46;
+  BRR = 47;
+  BRZ = 48;
+  BSD = 49;
+  BTN = 50;
+  BUK = 51;
+  BWP = 52;
+  BYB = 53;
+  BYN = 54;
+  BYR = 55;
+  BZD = 56;
+  CAD = 57;
+  CDF = 58;
+  CHE = 59;
+  CHF = 60;
+  CHW = 61;
+  CLE = 62;
+  CLF = 63;
+  CLP = 64;
+  CNH = 65;
+  CNX = 66;
+  CNY = 67;
+  COP = 68;
+  COU = 69;
+  CRC = 70;
+  CSD = 71;
+  CSK = 72;
+  CUC = 73;
+  CUP = 74;
+  CVE = 75;
+  CYP = 76;
+  CZK = 77;
+  DDM = 78;
+  DEM = 79;
+  DJF = 80;
+  DKK = 81;
+  DOP = 82;
+  DZD = 83;
+  ECS = 84;
+  ECV = 85;
+  EEK = 86;
+  EGP = 87;
+  ERN = 88;
+  ESA = 89;
+  ESB = 90;
+  ESP = 91;
+  ETB = 92;
+  EUR = 93;
+  FIM = 94;
+  FJD = 95;
+  FKP = 96;
+  FRF = 97;
+  GBP = 98;
+  GEK = 99;
+  GEL = 100;
+  GHC = 101;
+  GHS = 102;
+  GIP = 103;
+  GMD = 104;
+  GNF = 105;
+  GNS = 106;
+  GQE = 107;
+  GRD = 108;
+  GTQ = 109;
+  GWE = 110;
+  GWP = 111;
+  GYD = 112;
+  HKD = 113;
+  HNL = 114;
+  HRD = 115;
+  HRK = 116;
+  HTG = 117;
+  HUF = 118;
+  IDR = 119;
+  IEP = 120;
+  ILP = 121;
+  ILR = 122;
+  ILS = 123;
+  INR = 124;
+  IQD = 125;
+  IRR = 126;
+  ISJ = 127;
+  ISK = 128;
+  ITL = 129;
+  JMD = 130;
+  JOD = 131;
+  JPY = 132;
+  KES = 133;
+  KGS = 134;
+  KHR = 135;
+  KMF = 136;
+  KPW = 137;
+  KRH = 138;
+  KRO = 139;
+  KRW = 140;
+  KWD = 141;
+  KYD = 142;
+  KZT = 143;
+  LAK = 144;
+  LBP = 145;
+  LKR = 146;
+  LRD = 147;
+  LSL = 148;
+  LTL = 149;
+  LTT = 150;
+  LUC = 151;
+  LUF = 152;
+  LUL = 153;
+  LVL = 154;
+  LVR = 155;
+  LYD = 156;
+  MAD = 157;
+  MAF = 158;
+  MCF = 159;
+  MDC = 160;
+  MDL = 161;
+  MGA = 162;
+  MGF = 163;
+  MKD = 164;
+  MKN = 165;
+  MLF = 166;
+  MMK = 167;
+  MNT = 168;
+  MOP = 169;
+  MRO = 170;
+  MTL = 171;
+  MTP = 172;
+  MUR = 173;
+  MVP = 174;
+  MVR = 175;
+  MWK = 176;
+  MXN = 177;
+  MXP = 178;
+  MXV = 179;
+  MYR = 180;
+  MZE = 181;
+  MZM = 182;
+  MZN = 183;
+  NAD = 184;
+  NGN = 185;
+  NIC = 186;
+  NIO = 187;
+  NLG = 188;
+  NOK = 189;
+  NPR = 190;
+  NZD = 191;
+  OMR = 192;
+  PAB = 193;
+  PEI = 194;
+  PEN = 195;
+  PES = 196;
+  PGK = 197;
+  PHP = 198;
+  PKR = 199;
+  PLN = 200;
+  PLZ = 201;
+  PTE = 202;
+  PYG = 203;
+  QAR = 204;
+  RHD = 205;
+  ROL = 206;
+  RON = 207;
+  RSD = 208;
+  RUB = 209;
+  RUR = 210;
+  RWF = 211;
+  SAR = 212;
+  SBD = 213;
+  SCR = 214;
+  SDD = 215;
+  SDG = 216;
+  SDP = 217;
+  SEK = 218;
+  SGD = 219;
+  SHP = 220;
+  SIT = 221;
+  SKK = 222;
+  SLL = 223;
+  SOS = 224;
+  SRD = 225;
+  SRG = 226;
+  SSP = 227;
+  STD = 228;
+  STN = 229;
+  SUR = 230;
+  SVC = 231;
+  SYP = 232;
+  SZL = 233;
+  THB = 234;
+  TJR = 235;
+  TJS = 236;
+  TMM = 237;
+  TMT = 238;
+  TND = 239;
+  TOP = 240;
+  TPE = 241;
+  TRL = 242;
+  TRY = 243;
+  TTD = 244;
+  TWD = 245;
+  TZS = 246;
+  UAH = 247;
+  UAK = 248;
+  UGS = 249;
+  UGX = 250;
+  USD = 251;
+  USN = 252;
+  USS = 253;
+  UYI = 254;
+  UYP = 255;
+  UYU = 256;
+  UZS = 257;
+  VEB = 258;
+  VEF = 259;
+  VND = 260;
+  VNN = 261;
+  VUV = 262;
+  WST = 263;
+  XAF = 264;
+  XAG = 265;
+  XAU = 266;
+  XBA = 267;
+  XBB = 268;
+  XBC = 269;
+  XBD = 270;
+  XCD = 271;
+  XDR = 272;
+  XEU = 273;
+  XFO = 274;
+  XFU = 275;
+  XOF = 276;
+  XPD = 277;
+  XPF = 278;
+  XPT = 279;
+  XRE = 280;
+  XSU = 281;
+  XTS = 282;
+  XUA = 283;
+  XXX = 284;
+  YDD = 285;
+  YER = 286;
+  YUD = 287;
+  YUM = 288;
+  YUN = 289;
+  YUR = 290;
+  ZAL = 291;
+  ZAR = 292;
+  ZMK = 293;
+  ZMW = 294;
+  ZRN = 295;
+  ZRZ = 296;
+  ZWD = 297;
+  ZWL = 298;
+  ZWR = 299;
+}
+
+enum TripClass {
+  UNDEFINED = 0;
+  Y = 1;
+  C = 2;
+  F = 3;
+  W = 4;
+}

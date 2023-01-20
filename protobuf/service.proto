@@ -1,0 +1,37 @@
+syntax = "proto3";
+package protobuf;
+option go_package = "../protobuf";
+
+import "google/protobuf/timestamp.proto";
+
+message LongString {
+  string payload = 1;
+}
+
+message Object {
+  int32 id = 1;
+  float price = 2;
+  google.protobuf.Timestamp datetime = 3;
+
+  string data = 4;
+}
+
+message LargeResponse {
+  repeated Object data = 1;
+}
+
+message SimpleObject{
+  int32 id = 1;
+  float price = 2;
+  int64 foo = 3;
+  double bar = 4;
+  string lol = 5;
+  NestedObject kek = 6;
+  repeated NestedObject cheburek = 7;
+}
+
+message NestedObject {
+  int32 i = 1;
+  sint64 am = 2;
+  string groot = 3;
+}
