@@ -1,6 +1,7 @@
 package search_v3
 
 import (
+	"compress/gzip"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/require"
 	"go-playground/protobuf/utils"
+	"reflect"
 	"testing"
 )
 
@@ -33,9 +35,28 @@ func TestBinarySize(t *testing.T) {
 	bodyBytes := utils.Must2(proto.Marshal(protoData))
 	fmt.Printf("Proto body length: %d\n", len(bodyBytes))
 	utils.GzipAndPrint(bodyBytes)
+}
 
-	// Checking that original struct is equal to proto struct, converted by `resultsToProto`
-	//requireDeepEqual(t, reflect.ValueOf(data), reflect.ValueOf(protoData.Chunks))
+// Checking that original struct is equal to proto struct, converted by `resultsToProto`
+func TestProtoSameAsOriginal(t *testing.T) {
+	dump := readDump()
+	var data v3.SearchResults
+	require.NoError(t, jsonIter.Unmarshal(dump, &data))
+
+	protoData := resultsToProto(data)
+	requireDeepEqual(t, reflect.ValueOf(data), reflect.ValueOf(protoData.Chunks))
+}
+
+func TestVTProtoTheSame(t *testing.T) {
+	dump := readDump()
+	var data v3.SearchResults
+	require.NoError(t, jsonIter.Unmarshal(dump, &data))
+
+	protoData := resultsToProto(data)
+	protoBytes := utils.Must2(proto.Marshal(protoData))
+
+	var target SearchResults
+	require.NoError(t, target.UnmarshalVT(protoBytes))
 }
 
 func BenchmarkObject_MarshalJSON(b *testing.B) {
@@ -114,6 +135,7 @@ func BenchmarkObject_MarshalProto(b *testing.B) {
 func BenchmarkObject_UnmarshalProto(b *testing.B) {
 	data := resultsToProto(readDumpStruct())
 	bytes := utils.Must2(proto.Marshal(data))
+	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -134,12 +156,48 @@ func BenchmarkObject_MarshalVTProto(b *testing.B) {
 
 func BenchmarkObject_UnmarshalVTProto(b *testing.B) {
 	data := resultsToProto(readDumpStruct())
-	bytes := utils.Must2(proto.Marshal(data))
+	bytes := utils.Must2(data.MarshalVT())
+	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		var target SearchResults
 		target.UnmarshalVT(bytes)
+	}
+}
+
+// Custom checks
+func BenchmarkObject_Convert_MarshalVTProto_GZipDefault(b *testing.B) {
+	originalStruct := readDumpStruct()
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		data := resultsToProto(originalStruct)
+		bytes, _ := data.MarshalVT()
+		utils.CompressGZIP(bytes, gzip.DefaultCompression)
+	}
+}
+
+func BenchmarkObject_MarshalVTProto_GZipDefault(b *testing.B) {
+	data := resultsToProto(readDumpStruct())
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		bytes, _ := data.MarshalVT()
+		utils.CompressGZIP(bytes, gzip.DefaultCompression)
+	}
+}
+
+func BenchmarkObject_MarshalIterJSON_GZipDefault(b *testing.B) {
+	data := readDumpStruct()
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		bytes, _ := jsonIter.Marshal(data)
+		utils.CompressGZIP(bytes, gzip.DefaultCompression)
 	}
 }
 
